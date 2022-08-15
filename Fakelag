@@ -512,10 +512,10 @@ local function choke_cycle(cmd)
 		ui.set(limit, ui.get(ref_fakeduck) and 15 or fakelag_limit_trigget_status)
 	end
 
-	if ui.get(doubletap[2]) then
+	if ui.get(doubletap[2]) and not ui.get(ref_fakeduck) then
 		ui.set(fakelag_enabled,false)
 		ui.set(limit,1)
-	elseif not ui.get(doubletap[2]) then
+	elseif not ui.get(doubletap[2]) or ui.get(ref_fakeduck) then
 		ui.set(fakelag_enabled,true)
 	end
 
