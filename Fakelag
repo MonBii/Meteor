@@ -31,6 +31,7 @@ local ref_yaw, ref_yawslider = ui.reference("AA", "Anti-aimbot angles", "Yaw")
 local on_shot, on_shot_hotkey = ui.reference("AA", "Other", "On shot anti-aim")
 local fake_yaw_limit =  ui.reference("AA", "Anti-aimbot angles", "Fake yaw limit")
 local double_tap, double_tap_hotkey = ui.reference("RAGE", "Other", "Double tap")
+local doubletap = {ui.reference("RAGE","Other","Double tap")}
 local ref_jitter, ref_jitterslider = ui.reference("AA", "Anti-aimbot angles", "Yaw jitter")
 local bodyyaw, bodyyaw_slider = ui.reference("AA", "Anti-aimbot angles", "Body yaw")
 local fakelag_urmaxprocess = ui.reference("MISC", "Settings", "sv_maxusrcmdprocessticks")
@@ -44,7 +45,7 @@ local aadirection = "LEFT"
 local stored_target = false
 local aadirection = "BACK"
 local flags_on_land = false
-local SYR_State = "SYR-Default"
+local SYR_State = "Default"
 local syr_weapon_visible = false
 local last_manual_presstime = 0
 local trigger_send_packet = true
@@ -284,6 +285,9 @@ local function status_lagshift(e)
 	local flags_climbing_adder = player_move_type == 9
 	local can_fire_wall = player_will_peek()
 
+
+
+
 	if ui.get(amount_mode) == "Dynamic" then
 		lag_new_amo = "Dynamic"
 		lag_get_limit = - ui.get(variance_slider) * 0.01
@@ -385,98 +389,98 @@ client.set_event_callback("setup_command", function(cmd)
 	end
 
 	if velocity_speed < 5 and not slowwalking and onground and not infiniteduck and velocity_speed < 190 and not exploit and fired_shoot == true and flags_on_use == 0 and not in_freeze_time and flags_weapon_switch <= 0 and flags_on_land == false and not flags_climbing_adder then 
-		SYR_State = "SYR-Default"
+		SYR_State = "Default"
 	elseif velocity_speed > 2 and not slowwalking and onground and not infiniteduck and velocity_speed < 190 and not exploit and fired_shoot == true and flags_on_use == 0 and not in_freeze_time and flags_weapon_switch <= 0 and flags_on_land == false and not flags_climbing_adder then
-		SYR_State = "SYR-Running"
+		SYR_State = "Running"
 	elseif velocity_speed > 2 and slowwalking and onground and not infiniteduck and velocity_speed < 190 and not exploit and fired_shoot == true and flags_on_use == 0 and not in_freeze_time and flags_weapon_switch <= 0 and flags_on_land == false and not flags_climbing_adder then
-		SYR_State = "SYR-Slow Motion"
+		SYR_State = "Slow Motion"
 	elseif velocity_speed > 190 and onground and not infiniteduck and not exploit and fired_shoot == true and flags_on_use == 0 and flags_weapon_switch <= 0 and flags_on_land == false and not flags_climbing_adder then
-		SYR_State = "SYR-High Speed"
+		SYR_State = "High Speed"
 	elseif not onground and not exploit and fired_shoot == true and flags_on_use == 0 and not in_freeze_time and flags_weapon_switch <= 0 and flags_on_land == false and not flags_climbing_adder then
-		SYR_State = "SYR-Air"
+		SYR_State = "Air"
 	elseif infiniteduck and velocity_speed < 190 and not exploit and fired_shoot == true and flags_on_use == 0 and not in_freeze_time and flags_weapon_switch <= 0 and flags_on_land == false and not flags_climbing_adder then
-		SYR_State = "SYR-Crouching"
+		SYR_State = "Crouching"
 	elseif exploit and flags_on_use == 0 and not in_freeze_time and flags_weapon_switch <= 0 and not flags_climbing_adder then
-		SYR_State = "SYR-Exploit"
+		SYR_State = "Exploit"
 	elseif flags_on_use == 1 and fired_shoot == true and not in_freeze_time and flags_weapon_switch <= 0 and not flags_climbing_adder then
-		SYR_State = "SYR-In Use"
+		SYR_State = "In Use"
 	elseif fired_shoot == false and not in_freeze_time and flags_weapon_switch <= 0 and flags_weapon_reload == true and not flags_climbing_adder then
-		SYR_State = "SYR-Fired"
+		SYR_State = "Fired"
 	elseif flags_weapon_switch >= 0.001 and not in_freeze_time and onground and flags_on_land == false and not flags_climbing_adder then
-		SYR_State = "SYR-Weapon Switch"
+		SYR_State = "Weapon Switch"
 	elseif fired_shoot == false and flags_weapon_reload == false and onground and not in_freeze_time and flags_on_land == false and flags_weapon_switch <= 0 and not flags_climbing_adder then
-		SYR_State = "SYR-Weapon Reload"
+		SYR_State = "Weapon Reload"
 	elseif flags_on_land == true and flags_weapon_switch <= 0 and not in_freeze_time and fired_shoot == false and not flags_climbing_adder then
-		SYR_State = "SYR-On Land"
+		SYR_State = "On Land"
 	elseif flags_climbing_adder and not in_freeze_time then
-		SYR_State = "SYR-Climbing Ldder"
+		SYR_State = "Climbing Ldder"
 	elseif in_freeze_time then
-		SYR_State = "SYR-Freeze Time"
+		SYR_State = "Freeze Time"
 	end
 
 	local trigger_always_packet = true
 	local trigger_send_packet = true
-	if multi_select(ui.get(fakelag_send_packet_trigger), "On Standing") and SYR_State == "SYR-Default" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "On Standing") and SYR_State == "Default" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "While Moving") and SYR_State == "SYR-Running" or multi_select(ui.get(fakelag_send_packet_trigger), "While Moving") and SYR_State == "SYR-Slow Motion" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "While Moving") and SYR_State == "Running" or multi_select(ui.get(fakelag_send_packet_trigger), "While Moving") and SYR_State == "Slow Motion" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "On Duck") and SYR_State == "SYR-Crouching" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "On Duck") and SYR_State == "Crouching" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "On High Speed") and SYR_State == "SYR-High Speed" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "On High Speed") and SYR_State == "High Speed" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "On Jump") and SYR_State == "SYR-Air" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "On Jump") and SYR_State == "Air" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "On Exploit") and SYR_State == "SYR-Exploit" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "On Exploit") and SYR_State == "Exploit" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "Weapon Fired") and SYR_State == "SYR-Fired" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "Weapon Fired") and SYR_State == "Fired" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "On Use") and SYR_State == "SYR-In Use" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "On Use") and SYR_State == "In Use" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "On Freezetime") and SYR_State == "SYR-Freeze Time" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "On Freezetime") and SYR_State == "Freeze Time" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "Weapon Switch") and SYR_State == "SYR-Weapon Switch" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "Weapon Switch") and SYR_State == "Weapon Switch" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "Weapon Reload") and SYR_State == "SYR-Weapon Reload" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "Weapon Reload") and SYR_State == "Weapon Reload" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "On Land") and SYR_State == "SYR-On Land" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "On Land") and SYR_State == "On Land" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
 
-	if multi_select(ui.get(fakelag_send_packet_trigger), "While Climbing Ladder") and SYR_State == "SYR-Climbing Ldder" then
+	if multi_select(ui.get(fakelag_send_packet_trigger), "While Climbing Ladder") and SYR_State == "Climbing Ldder" then
 		trigger_send_packet = trigger_choked >= ui.get(limit)
 		trigger_always_packet = false
 	end
@@ -506,11 +510,18 @@ local function choke_cycle(cmd)
 	end
 
 	local exploit = ui.get(double_tap) and ui.get(double_tap_hotkey)
-	local fakelag_limit_trigget_status = exploit and 14 or fakelag_limit_trigget_status
+	local fakelag_limit_trigget_status = exploit and 16 or fakelag_limit_trigget_status
+
 	if ui.get(fakelag_enabled) then
 		ui.set(amount, ui.get(ref_fakeduck) and "Maximum" or lag_shit[lag_info.current_phase].amount)
 		ui.set(variance, ui.get(ref_fakeduck) and 0 or lag_shit[lag_info.current_phase].variance)
 		ui.set(limit, ui.get(ref_fakeduck) and 15 or fakelag_limit_trigget_status)
+	end
+
+	if ui.get(doubletap[2]) then
+		ui.set(fakelag_enabled,false)
+	elseif not ui.get(doubletap[2]) then
+		ui.set(fakelag_enabled,true)
 	end
 
 	ui.set(lagcomp_break, lag_shit[lag_info.current_phase].break_lagcomp)
