@@ -1,9 +1,3 @@
--- [[ Lua Name: HVH Fakelag Better
-       -- Update Creative: SYR QQ3207523762
-       -- Version: 2.4 Update Time: 2020.10.25
-       -- Edition: Ougen Skeet Cloud Loader Lua
--- ]]
-
 local fakelag_enabled = ui.new_checkbox("AA", "Fake lag", "Enabled Fakelag")
 local amount_mode = ui.new_combobox("AA", "Fake lag", "Fakelag Amount", "Dynamic", "Maximum", "Fluctuate")
 local variance_slider = ui.new_slider("AA", "Fake lag", "Fakelag Variance", 0, 100, 0, true, "%")
@@ -520,6 +514,7 @@ local function choke_cycle(cmd)
 
 	if ui.get(doubletap[2]) then
 		ui.set(fakelag_enabled,false)
+		ui.set(limit,1)
 	elseif not ui.get(doubletap[2]) then
 		ui.set(fakelag_enabled,true)
 	end
