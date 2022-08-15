@@ -1,0 +1,267 @@
+
+-----------------------------------------------------------------------------------------------------
+
+
+--On hit Speed Visuals
+
+local client_screen_size, entity_get_local_player, entity_get_prop, entity_is_alive, globals_curtime, math_abs, math_floor, renderer_indicator, renderer_rectangle, renderer_text, string_format, ui_get, ui_new_combobox, ui_reference, ui_set_callback = client.screen_size, entity.get_local_player, entity.get_prop, entity.is_alive, globals.curtime, math.abs, math.floor, renderer.indicator, renderer.rectangle, renderer.text, string.format, ui.get, ui.new_combobox, ui.reference, ui.set_callback
+
+local images = require "gamesense/images"
+local warning = images.get_panorama_image("icons/ui/warning.svg")
+
+local displayMaxSpeed = ui_new_combobox("VISUALS", "Other ESP", "Display maximum speed", "Off", "Bar", "Vanilla indicator")
+
+local function rgb_health_based(percentage)
+	local r = 124*2 - 124 * percentage
+	local g = 195 * percentage
+	local b = 13
+	return r, g, b
+end
+
+local function rectangle_outline(x, y, w, h, r, g, b, a, s)
+	s = s or 1
+	renderer_rectangle(x, y, w, s, r, g, b, a) -- top
+	renderer_rectangle(x, y+h-s, w, s, r, g, b, a) -- bottom
+	renderer_rectangle(x, y+s, s, h-s*2, r, g, b, a) -- left
+	renderer_rectangle(x+w-s, y+s, s, h-s*2, r, g, b, a) -- right
+end
+
+local function drawBar(modifier, r,g,b, text)
+	local alpha = math_abs(globals_curtime()*4 % 2 - 1)
+	alpha = 255*alpha
+	
+
+	local text_width = 95
+	local sw, sh = client_screen_size()
+	local x, y = sw/2-text_width, sh*0.35
+	local iw, ih = warning:measure(nil, 35)
+	warning:draw(x-3, y-4, iw+6, ih+6, 16, 16, 16, 255)
+	renderer_rectangle(x+13, y+11, 8, 20, 16, 16, 16, 255)
+	warning:draw(x, y, nil, 35, r,g,b, alpha)
+
+	--renderer_text(x+iw+8, y+3, 255, 255, 255, 255, "b", 0, string_format("Slowed down %d%%", modifier*100))
+	renderer_text(x+iw+8, y+3, 255, 255, 255, 255, "b", 0, string_format("%s %d%%", text, modifier*100))
+	local rx, ry, rw, rh = x+iw+8, y+3+17, text_width, 12
+
+	rectangle_outline(rx, ry, rw, rh, 0, 0, 0, 255, 1)
+	renderer_rectangle(rx+1, ry+1, rw-2, rh-2, 16, 16, 16, 180)
+	renderer_rectangle(rx+1, ry+1, math_floor((rw-2)*modifier), rh-2, r, g, b, 180)
+end
+
+local function maxSpeed()
+	local lp = entity_get_local_player()
+	if not entity_is_alive(lp) then return end
+
+	local modifier = entity_get_prop(lp, "m_flVelocityModifier")
+	local r, g, b = rgb_health_based(modifier)
+
+	if modifier == 1 then return end
+	if ui_get(displayMaxSpeed) == "Bar" then 
+		drawBar(modifier, r, g, b, "VELOCITY")
+	else 
+		renderer_indicator(r, g, b, 255, "SLOW")
+	end
+end
+
+ui_set_callback(displayMaxSpeed, function()
+	local update_callback = ui_get(displayMaxSpeed) ~= "Off" and client.set_event_callback or client.unset_event_callback 
+	update_callback("paint", maxSpeed)
+end)
+
+
+
+
+--Scope Line--
+
+client_screen_size, entity_get_local_player, entity_get_player_weapon, entity_get_prop, entity_is_alive, globals_frametime, renderer_gradient, ui_get, ui_new_checkbox, ui_new_color_picker, ui_new_slider, ui_reference, ui_set, ui_set_callback, ui_set_visible = client.screen_size, entity.get_local_player, entity.get_player_weapon, entity.get_prop, entity.is_alive, globals.frametime, renderer.gradient, ui.get, ui.new_checkbox, ui.new_color_picker, ui.new_slider, ui.reference, ui.set, ui.set_callback, ui.set_visible
+global_alpha = 0
+clamp = function(v, min, max)
+   local num = v
+   num = num < min and min or num
+   num = num > max and max or num
+   return num
+end
+scope_overlay = ui.reference('VISUALS', 'Effects', 'Remove scope overlay')
+master_switch2 = ui.new_checkbox('Visuals', 'Effects', 'Custom scope lines')
+color_picker = ui.new_color_picker('Visuals', 'Effects', '\n scope_lines_color_picker', 0, 0, 0, 255) --[[ 3D55D6FF / 9BABFDFF ]]
+overlay_position = ui.new_slider('Visuals', 'Effects', '\n scope_lines_initial_pos', 0, 500, 250)
+overlay_offset = ui.new_slider('Visuals', 'Effects', '\n scope_lines_offset', 0, 500, 15)
+fade_time = ui.new_slider('Visuals', 'Effects', 'Fade animation speed', 4, 20, 12, true, 'fr', 1, { [4] = 'Off' })
+g_paint_ui = function()
+   ui_set(scope_overlay, true)
+end
+g_paint = function()
+   local offset, initial_position, fade_time, color =
+	   ui_get(overlay_offset), ui_get(overlay_position),
+	   ui_get(fade_time), { ui_get(color_picker) }
+   local FT = fade_time > 4 and (globals_frametime()*fade_time) or 1
+   local width, height = client_screen_size()
+   -- DO STUFF
+   local me = entity_get_local_player()
+   local wpn = entity_get_player_weapon(me)
+   local scope_level = entity_get_prop(wpn, 'm_zoomLevel')
+   local scoped = entity_get_prop(me, 'm_bIsScoped') == 1
+   local resume_zoom = entity_get_prop(me, 'm_bResumeZoom') == 1
+   local is_valid = entity_is_alive(me) and wpn ~= nil and scope_level ~= nil
+   if is_valid and scope_level > 0 and scoped and not resume_zoom then
+	   global_alpha = clamp(global_alpha+FT, 0, 1)
+   else
+	   global_alpha = clamp(global_alpha-FT, 0, 1)
+   end
+   renderer_gradient(width/2 - initial_position, height / 2, initial_position - offset, 1, color[1], color[2], color[3], 0, color[1], color[2], color[3], global_alpha*color[4], true)
+   renderer_gradient(width/2 + offset, height / 2, initial_position - offset, 1, color[1], color[2], color[3], global_alpha*color[4], color[1], color[2], color[3], 0, true)
+   renderer_gradient(width / 2, height/2 - initial_position, 1, initial_position - offset, color[1], color[2], color[3], 0, color[1], color[2], color[3], global_alpha*color[4], false)
+   renderer_gradient(width / 2, height/2 + offset, 1, initial_position - offset, color[1], color[2], color[3], global_alpha*color[4], color[1], color[2], color[3], 0, false)
+   ui_set(scope_overlay, false)
+end
+ui_callback = function(c)
+   local master_switch = ui_get(c)
+   
+   if not master_switch then
+	   global_alpha = 0
+   end
+   client[(not master_switch and 'un' or '') .. 'set_event_callback']('paint_ui', g_paint_ui)
+   client[(not master_switch and 'un' or '') .. 'set_event_callback']('paint', g_paint)
+end
+ui.set_callback(master_switch2, ui_callback)
+ui_callback(master_switch2)
+
+
+
+--Hide EX falg--
+
+local vector = require "vector"
+
+local lookupTable = {
+   [1] = {text = "H", color = {255,255,255,200}},
+   [2] = {text = "K", color = {255,255,255,200}},
+   [4] = {text = "HK", color = {255,255,255,200}},
+   [8] = {text = "ZOOM", color = {50,150,180,255}},
+   [16] = {text = "BLIND", color = {50,150,180,255}},
+   [32] = {text = "RELOAD", color = {50,150,180,255}},
+   [64] = {text = "C4", color = {255,0,0,255}},
+   [128] = {text = "VIP", color = {255,0,0,255}},
+   [256] = {text = "DEFUSE", color = {255,0,0,255}},
+   [512] = {text = "FD", color = {255,255,255,200}},
+   [1024] = {text = "PIN", color = {255,0,0,255}},
+   [2048] = {text = "HIT", color = {255,255,255,200}},
+   [4096] = {text = "O", color = {255,255,255,200}},
+   [8192] = {text = "X", color = {255,255,255,200}},
+   -- beta flag
+   -- beta flag
+   -- beta flag
+   [131072] = {text = "X", color = {255,0,0,255}},
+}
+
+
+local options = {}
+for k, v in pairs(lookupTable) do
+   options[#options+1] = v.text
+end
+local uiOptions = ui.new_multiselect("VISUALS", "Effects", "Exclude flags", options)
+local dpiScale = ui.reference("MISC", "Settings", "DPI scale")
+
+local function contains(tbl, val) for i=1,#tbl do if tbl[i] == val then return true end end return false end
+local function getTableLength(table)
+   local count = 0
+   for k, v in pairs(table) do
+	   count = count + 1
+   end
+   return count
+end
+
+client.set_event_callback("paint", function()
+   for i, v in ipairs(entity.get_players(true)) do -- loop through all enemies (wont work for dormant players, fix it urself fu)
+	   local espData = entity.get_esp_data(v) -- get esp data table
+	   local stack = 0
+
+	   for j = 1, getTableLength(lookupTable), 1 do
+		   local c = bit.band(espData.flags, bit.lshift(1, j-1)) -- unmasking the bitmask (j-1 to compensate for lua tables starting from index 1 and not 0)
+
+		   if c ~= 0 then
+			   local bb = {entity.get_bounding_box(v)} -- bounding box coords (x1, y1, x2, y2, alpha_multiplier)
+			   local height = (10 * ui.get(dpiScale):gsub('%%', '') / 100) -- gap account for dpi scaling
+			   local pos = vector(bb[3], bb[2]) + vector(2, stack*height) -- x padding and y padding
+
+
+			   if not contains(ui.get(uiOptions), lookupTable[c].text) then -- check if flag isnt excluded
+				   if #bb == 5 and bb[5] ~= 0 then
+					   local rgba = lookupTable[c].color -- get color table appropriate to the flag
+					   renderer.text(pos.x, pos.y, rgba[1], rgba[2], rgba[3], rgba[4], "-d", nil, lookupTable[c].text)
+					   stack = stack + 1
+				   end
+			   end
+		   end
+	   end
+   end
+end)
+
+
+
+--Radio--
+
+local client_screen_size, client_set_cvar, math_fmod, tonumber, ui_get, ui_new_slider, ui_set_callback, ui_set_visible = client.screen_size, client.set_cvar, math.fmod, tonumber, ui.get, ui.new_slider, ui.set_callback, ui.set_visible
+
+local function set_aspect_ratio(aspect_ratio_multiplier)
+	local screen_width, screen_height = client_screen_size()
+	local aspectratio_value = (screen_width*aspect_ratio_multiplier)/screen_height
+
+	if aspect_ratio_multiplier == 1 then
+		aspectratio_value = 0
+	end
+	client_set_cvar("r_aspectratio", tonumber(aspectratio_value))
+end
+
+local function gcd(m, n)
+	while m ~= 0 do
+		m, n = math_fmod(n, m), m
+	end
+
+	return n
+end
+
+local screen_width, screen_height, aspect_ratio_reference
+
+local function on_aspect_ratio_changed()
+	local aspect_ratio = ui_get(aspect_ratio_reference)*0.01
+	aspect_ratio = 2 - aspect_ratio
+	set_aspect_ratio(aspect_ratio)
+end
+
+local multiplier = 0.01
+local steps = 200
+
+local function setup(screen_width_temp, screen_height_temp)
+	screen_width, screen_height = screen_width_temp, screen_height_temp
+	local aspect_ratio_table = {}
+
+	for i=1, steps do
+		local i2=(steps-i)*multiplier
+		local divisor = gcd(screen_width*i2, screen_height)
+		if screen_width*i2/divisor < 100 or i2 == 1 then
+			aspect_ratio_table[i] = screen_width*i2/divisor .. ":" .. screen_height/divisor
+		end
+	end
+
+	if aspect_ratio_reference ~= nil then
+		ui_set_visible(aspect_ratio_reference, false)
+		ui_set_callback(aspect_ratio_reference, function() end)
+	end
+
+	aspect_ratio_reference = ui_new_slider("VISUALS", "Effects", "Force aspect ratio", 0, steps-1, steps/2, true, "%", 1, aspect_ratio_table)
+	ui_set_callback(aspect_ratio_reference, on_aspect_ratio_changed)
+end
+setup(client_screen_size())
+
+local function on_paint(ctx)
+	local screen_width_temp, screen_height_temp = client_screen_size()
+	if screen_width_temp ~= screen_width or screen_height_temp ~= screen_height then
+		setup(screen_width_temp, screen_height_temp)
+	end
+end
+client.set_event_callback("paint", on_paint)
+
+
+
+
+
